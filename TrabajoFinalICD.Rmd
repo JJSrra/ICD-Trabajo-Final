@@ -1,0 +1,52 @@
+---
+title: "Trabajo Final Introducción a la Ciencia de Datos"
+author: "Juanjo Sierra"
+date: "27 de diciembre de 2018"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Planteamiento
+
+El trabajo final de la asignatura _Introducción a la Ciencia de Datos_ se divide en dos secciones. Consiste en realizar un estudio sobre un conjunto de datos de regresión y otro sobre un conjunto de datos de clasificación. Se aplicarán distintas técnicas aprendidas durante la asignatura para conseguir los resultados adecuados.
+
+# Librerías y paquetes a cargar
+
+
+
+# Trabajo Final Regresión
+
+En primer lugar se realizará el estudio de la base de datos de regresión. En este caso el conjunto de datos a analizar es **Friedman**, que se ha descargado desde el repositorio de datasets de la asignatura. Se puede leer utilizando la siguiente orden:
+
+```{r}
+friedman = read.csv("Datos/friedman/friedman.dat", header = FALSE, comment.char = "@")
+head(friedman)
+```
+
+Dado que los nombres asignados a las variables no aportan ninguna información, y en el resumen del dataset en formato KEEL podemos comprobar que sus nombres tampoco son representativos, se procede a asignarles una notación genérica.
+
+```{r}
+n = length(names(friedman))-1
+names(friedman)[1:n] = paste ("X", 1:n, sep="")
+names(friedman)[n+1] = "Y"
+head(friedman)
+```
+
+Ahora podemos comprobar de forma más directa que existen 5 variables de entrada (X1-5) que determinan una única variable de salida (Y). Es interesante comprobar las dimensiones del dataset para poder asegurar que se está asumiendo lo correcto.
+
+```{r}
+dim(friedman)
+```
+
+Con esto se puede confirmar que existen un total de 1200 ejemplos en el conjunto de datos, cada uno con 6 variables (5 de entrada y 1 de salida).
+
+Se puede comprobar también si existen valores perdidos en el dataset. Para esto vamos a utilizar la función `anyNA`:
+
+```{r}
+anyNA(friedman)
+```
+
+Este resultado indica que no hay valores perdidos y que por lo tanto no es necesario imputar ni tomar ninguna decisión para restablecer dichos valores.
