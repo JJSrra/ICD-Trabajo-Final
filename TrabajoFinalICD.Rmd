@@ -15,6 +15,11 @@ El trabajo final de la asignatura _Introducción a la Ciencia de Datos_ se divid
 
 # Librerías y paquetes a cargar
 
+```{r}
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+```
 
 
 # Trabajo Final Regresión
@@ -43,10 +48,50 @@ dim(friedman)
 
 Con esto se puede confirmar que existen un total de 1200 ejemplos en el conjunto de datos, cada uno con 6 variables (5 de entrada y 1 de salida).
 
-Se puede comprobar también si existen valores perdidos en el dataset. Para esto vamos a utilizar la función `anyNA`:
+Se puede comprobar también si existen valores perdidos en el dataset. Para esto se puede utilizar la función `anyNA`:
 
 ```{r}
 anyNA(friedman)
 ```
 
 Este resultado indica que no hay valores perdidos y que por lo tanto no es necesario imputar ni tomar ninguna decisión para restablecer dichos valores.
+
+A continuación se puede comprobar si existen ejemplos duplicados, y eliminarlos del dataset. Para ello se utiliza la función `duplicated` acompañado de la función `any`:
+
+```{r}
+any(duplicated(friedman))
+```
+
+Como no hay duplicados se puede continuar con el estudio sin realizar ninguna alteración en el conjunto de datos.
+
+Además, como el rango de las variables está entre 0 y 1, no es necesario realizar un escalado ni una transformación en los valores. En este punto se puede afirmar que los datos están listos para poder trabajar con ellos.
+
+Como primer paso para el análisis del dataset se puede mostrar cada una de las variables de entrada con respecto a la variable de salida. Esto permitirá averiguar de un vistazo cuál tiene más potencial de determinar qué valor de salida obtendrá dicho ejemplo.
+
+```{r}
+plotY = function (x,y) {
+  plot(friedman[,y]~friedman[,x], xlab=names(friedman)[x], ylab=names(friedman)[y])
+}
+
+par(mfrow=c(2,3))
+x = sapply(1:(dim(friedman)[2]-1), plotY, dim(friedman)[2])
+par(mfrow=c(1,1))
+```
+
+Basándose en un modelo de regresión lineal, se puede especular que la variable X4 parece tener una correlación más alta con la variable de salida Y, y por tanto podría resultar en un mejor modelo. A continuación se muestra la gráfica de X4 frente a Y más grande para poder apreciar mejor la posible correlación.
+
+```{r}
+plotY(4,dim(friedman)[2])
+```
+
+El primer objetivo del trabajo final de regresión es generar un modelo lineal con cada una de las variables de entrada del dataset. De esta forma se puede obtener de una manera sencilla la información sobre qué variable es mejor para un modelo lineal, es decir, qué variable es más representativa de la de salida.
+
+Para realizar los modelos de regresión lineal se va a utilizar la función `lm` que ya viene entre las funciones base de R. Es necesario indicar cuál es la variable de salida y cuál (o cuáles) son las que se van a utilizar para construir el modelo.
+
+Se analiza en primer lugar el modelo que utiliza la variable X1. Con la función `summary` se obtiene una información más detallada del modelo resultante.
+
+```{r}
+lmsimple1 = lm(Y~X1, data=friedman)
+summary(lmsimple1)
+```
+
