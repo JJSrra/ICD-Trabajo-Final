@@ -48,6 +48,12 @@ dim(friedman)
 
 Con esto se puede confirmar que existen un total de 1200 ejemplos en el conjunto de datos, cada uno con 6 variables (5 de entrada y 1 de salida).
 
+Utilizando la función `summary` se puede obtener una visión más completa del dataset, arrojando nuevos valores interesantes para su estudio como los rangos de las variables, sus cuartiles o su media y mediana.
+
+```{r}
+summary(friedman)
+```
+
 Se puede comprobar también si existen valores perdidos en el dataset. Para esto se puede utilizar la función `anyNA`:
 
 ```{r}
@@ -64,7 +70,7 @@ any(duplicated(friedman))
 
 Como no hay duplicados se puede continuar con el estudio sin realizar ninguna alteración en el conjunto de datos.
 
-Además, como el rango de las variables está entre 0 y 1, no es necesario realizar un escalado ni una transformación en los valores. En este punto se puede afirmar que los datos están listos para poder trabajar con ellos.
+Además, como el rango de las variables está entre 0 y 1 (como se pudo comprobar anteriormente con el `summary`), no es necesario realizar un escalado ni una transformación en los valores. En este punto se puede afirmar que los datos están listos para poder trabajar con ellos.
 
 Como primer paso para el análisis del dataset se puede mostrar cada una de las variables de entrada con respecto a la variable de salida. Esto permitirá averiguar de un vistazo cuál tiene más potencial de determinar qué valor de salida obtendrá dicho ejemplo.
 
