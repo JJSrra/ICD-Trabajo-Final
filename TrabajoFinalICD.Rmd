@@ -90,14 +90,34 @@ Basándose en un modelo de regresión lineal, se puede especular que la variable
 plotY(4,dim(friedman)[2])
 ```
 
+La correlación de las variables entre sí y con la variable de salida puede obtenerse de forma directa gracias a la función `cor`:
+
+```{r}
+cor(friedman)
+```
+
+Como se había supuesto anteriormente en función de las gráficas obtenidas, es la variable X4 la que más correlación tiene con la variable de salida Y (~0.616).
+
 El primer objetivo del trabajo final de regresión es generar un modelo lineal con cada una de las variables de entrada del dataset. De esta forma se puede obtener de una manera sencilla la información sobre qué variable es mejor para un modelo lineal, es decir, qué variable es más representativa de la de salida.
 
 Para realizar los modelos de regresión lineal se va a utilizar la función `lm` que ya viene entre las funciones base de R. Es necesario indicar cuál es la variable de salida y cuál (o cuáles) son las que se van a utilizar para construir el modelo.
 
-Se analiza en primer lugar el modelo que utiliza la variable X1. Con la función `summary` se obtiene una información más detallada del modelo resultante.
+Se van a analizar todas las variables X con respecto a la variable de salida Y. Se construye un modelo con cada una de estas variables, y con la función `summary` se obtiene una información más detallada del modelo resultante.
 
 ```{r}
 lmsimple1 = lm(Y~X1, data=friedman)
+lmsimple2 = lm(Y~X2, data=friedman)
+lmsimple3 = lm(Y~X3, data=friedman)
+lmsimple4 = lm(Y~X4, data=friedman)
+lmsimple5 = lm(Y~X5, data=friedman)
+
 summary(lmsimple1)
+summary(lmsimple2)
+summary(lmsimple3)
+summary(lmsimple4)
+summary(lmsimple5)
 ```
 
+De los resultados anteriores se pueden extraer varias afirmaciones. En primer lugar, el p-value de los modelos de X1, X2, X4 y X5 es muy pequeño (< 2.2e-16) por lo que se puede afirmar con una confianza casi cercana al 100% que existe algún tipo de dependencia lineal entre dichas variables y la variable de salida. En el caso de la variable X3, sin embargo, el p-value es muy alto (> 0.2) por lo que no se puede afirmar lo anterior con suficiente confianza, es decir, es una variable que no se utilizará generalmente para construir un modelo de regresión lineal.
+
+De entre los modelos aceptables, como era de esperar el mejor es el que utiliza X4, la variable que más correlación mantiene con la salida, a pesar de ser "tan sólo" un valor de R-cuadrado de 0.379. El R-squared o R-cuadrado indica cómo de bueno es el modelo de regresión lineal. Cuanto más próximo a 1 más acertado es, y cuanto más próximo a 0 al contrario. Es por esto que a pesar de que el valor de X4 no es muy óptimo, es el que más cerca se encuentra del 1, y por tanto el mejor de las variables estudiadas.
