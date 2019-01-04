@@ -181,3 +181,28 @@ summary(lminteraccion3)
 ```
 
 Este modelo supone un caso particular, y es que su acierto es superior a la de los modelos anteriores (R-cuadrado superior a 0.73), pero a su vez no refleja una confianza que garantice que la interacción estudiada se ajuste de forma lineal a la variable de salida. Por dicha razón, mientras se esté buscando un modelo de regresión lineal no se va a utilizar este. De nuevo, la falta de confianza viene dada por un p-valor muy alto (~0.706).
+
+### No linealidad
+
+El siguiente paso es tratar de encontrar si alguna de las combinaciones que se han probado tienen un componente no lineal que pueda ayudar a ajustar mejor. En primer lugar se probará con X4, la mejor variable encontrada mediante modelos de regresión lineal simples, dado que ninguna variable aparenta seguir una distribución cuadrática con respecto a la variable de salida.
+
+```{r}
+lmnolinealidad1 = lm(Y~X4+I(X4^2), data=friedman)
+summary(lmnolinealidad1)
+```
+
+El modelo es ligeramente mejor al lineal simple, pero como se puede observar en el resumen, el p-valor de la variable al cuadrado es sustancialmente mayor al de la varaible simple. Por tanto no merece la pena investigar esa vertiente. Se puede probar con otra variable distinta, como X1.
+
+```{r}
+lmnolinealidad2 = lm(Y~X1+I(X1^2), data=friedman)
+summary(lmnolinealidad2)
+```
+
+Dado que el p-valor de la variable cuadrática es pequeño, puede afirmarse con una alta confianza que X1^2 tiene dependencia lineal con Y, y por tanto puede ser útil en modelos más complejos. Se puede probar a añadirla al mejor modelo hasta ahora, el que utilizaba todas las variables menos X3.
+
+```{r}
+lmnolinealidad3 = lm(Y~.-X3+I(X1^2), data=friedman)
+summary(lmnolinealidad3)
+```
+
+Se ha encontrado un modelo en el que una transformación no lineal ha aportado una solución considerablemente mejor a la anterior. El R-cuadrado ajustado ha pasado de 0.72 a 0.76, y el p-valor de todas las variables que componen el modelo asegura con confianza su correlación lineal con la variable Y. Por tanto este modelo supera a `lmmultiple2` como mejor modelo encontrado.
