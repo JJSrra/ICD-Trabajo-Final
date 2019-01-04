@@ -19,6 +19,7 @@ El trabajo final de la asignatura _Introducción a la Ciencia de Datos_ se divid
 library(ggplot2)
 library(dplyr)
 library(tidyr)
+library(kknn)
 ```
 
 
@@ -206,3 +207,67 @@ summary(lmnolinealidad3)
 ```
 
 Se ha encontrado un modelo en el que una transformación no lineal ha aportado una solución considerablemente mejor a la anterior. El R-cuadrado ajustado ha pasado de 0.72 a 0.76, y el p-valor de todas las variables que componen el modelo asegura con confianza su correlación lineal con la variable Y. Por tanto este modelo supera a `lmmultiple2` como mejor modelo encontrado.
+
+## Algoritmo k-NN para regresión no paramétrica
+
+Para el siguiente apartado del trabajo final de regresión se va a realizar un estudio del dataset con el algoritmo k-NN. Se probarán distintas configuraciones para encontrar la mejor combinación de variables en el caso de dicho algoritmo.
+
+Cabe destacar que los datos utilizados por k-NN deben estar normalizados, para que las variables con valores de mayor orden no tengan más influencia en el cálculo de la distancia que aquellas con valores de menor orden. En el caso de este dataset, las variables de entrada tienen los valores entre 0 y 1 por lo que no es necesario realizar el escalado. Aunque, por defecto, la normalización se hace gracias al parámetro `scale = TRUE` de la función `kknn`. Para utilizar dicha función es necesario cargar el paquete homónimo, como ya se hizo al comienzo del trabajo.
+
+En primer lugar se va a partir del modelo que contiene todas las variables. Los valores por defecto que se utilizan son k=7, y el kernel óptimo. Se utiliza el mismo conjunto de datos (el dataset entero) tanto para train como para test en este caso, para obtener un único valor que ejemplifique cómo se comporta el modelo para train.
+
+```{r}
+fitknn1 = kknn(Y~., friedman, friedman)
+```
+
+A continuación se muestran los valores reales de Y frente a los que k-NN ha predicho, para comprobar de forma visual cuánto se parece la predicción a la realidad.
+
+```{r}
+plot(friedman$Y~friedman$X4)
+points(friedman$X4, fitknn1$fitted.values, col="red")
+```
+
+De esta gráfica sólo se puede intuir que el modelo construido con k-NN calcula unos valores de Y que siguen una distribución similar a la de la variable real. Sin embargo, se necesita una medida objetiva que ayude a valorar estos modelos de forma más precisa. Para ello se utiliza la raíz del error cuadrático medio (Root-Mean-Square Error, o __RMSE__). Se puede calcular siguiendo la siguiente fórmula:
+
+```{r}
+RMSE = function(fit, labels) {
+  yprime = fit$fitted.values
+  sqrt(sum((labels-yprime)^2)/length(yprime)) # RMSE
+}
+
+RMSE(fitknn1, friedman$Y)
+```
+
+Ahora que se ha implementado la función del cálculo del RMSE, se pueden generar nuevos modelos con el algoritmo k-NN y compararlos entre sí. Por ejemplo, el modelo que contiene todas las variables menos X3, que anteriormente se ha comprobado que no ha aportado nada.
+
+```{r}
+fitknn2 = kknn(Y~.-X3, friedman, friedman)
+RMSE(fitknn2, friedman$Y)
+```
+
+En este caso se puede comprobar que los mejores modelos para regresión lineal no tienen por qué ser los mejores para el algoritmo k-NN. Aun así, se puede probar la selección de características del mejor modelo de regresión lineal múltiple para k-NN y de esta forma valorar cómo de bien aproxima la variable de salida con respecto a los otros modelos de este algoritmo.
+
+```{r}
+fitknn3 = kknn(Y~.-X3+I(X1^2), friedman, friedman)
+RMSE(fitknn3, friedman$Y)
+```
+
+La adición de la variable X1 cuadrática ha aportado al modelo, aunque sin embargo este sigue sin ser mejor que el que tiene todas las variables. Si la añadimos a dicho modelo se podrá comprobar si realmente es una buena característica a tener en cuenta.
+
+```{r}
+fitknn4 = kknn(Y~.+I(X1^2), friedman, friedman)
+RMSE(fitknn4, friedman$Y)
+```
+
+El modelo es mejor que el mejor obtenido previamente pero no es una mejora sustancial a cambio de aumentar la complejidad con una nueva variable. Se puede comprobar si eliminando alguna otra variable el RMSE disminuye (X1 no puede ser eliminada porque es necesaria para el cálculo de X1^2).
+
+```{r}
+fitknn5 = kknn(Y~.-X2+I(X1^2), friedman, friedman)
+fitknn6 = kknn(Y~.-X4+I(X1^2), friedman, friedman)
+fitknn7 = kknn(Y~.-X5+I(X1^2), friedman, friedman)
+RMSE(fitknn5, friedman$Y)
+RMSE(fitknn6, friedman$Y)
+RMSE(fitknn7, friedman$Y)
+```
+
+Los resultados reflejan que no merece la pena eliminar ninguna de las variables, y que el mejor modelo según el criterio seguido en el estudio sería el que contiene todas las variables, ya que añadir la variable X1 cuadrática no aporta una suficiente mejora, y sin embargo sí añade complejidad al modelo.
