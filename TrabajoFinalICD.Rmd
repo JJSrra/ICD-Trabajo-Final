@@ -349,3 +349,71 @@ knnMSEtest
 ```
 
 Para el k-NN la diferencia entre los errores de train y test se hace más notable, aumentando desde un 1.423 hasta un 3.196. A pesar de la diferencia entre ambas pruebas, el MSE en test, que es el que realmente es significativo, sigue estando bastante por debajo con respecto a su análogo de regresión lineal. El modelo que contiene todas las variables se ajusta por tanto bastante mejor con el algoritmo k-NN que con regresión lineal.
+
+Antes de comenzar con las comparativas entre los algoritmos, se han de leer las tablas con los errores medios tanto de train como de test para tener los datos disponibles para aplicar los tests estadísticos. Estas tablas deberán contener los nuevos valores obtenidos por regresión lineal y k-NN, sustituyendo a los que aparecían por defecto.
+
+```{r}
+resultados = read.csv("Datos/regr_train_alumnos.csv")
+tablatra = cbind(resultados[,2:dim(resultados)[2]])
+colnames(tablatra) = names(resultados)[2:dim(resultados)[2]]
+rownames(tablatra) = resultados[,1]
+
+resultados = read.csv("Datos/regr_test_alumnos.csv")
+tablatst = cbind(resultados[,2:dim(resultados)[2]])
+colnames(tablatst) = names(resultados)[2:dim(resultados)[2]]
+rownames(tablatst) = resultados[,1]
+```
+
+
+### Wilcoxon
+
+A continuación se va a ejecutar el test de Wilcoxon para comprobar si existen diferencias significativas entre ambos modelos. Dado que Wilcoxon trabaja con diferencias de error, en regresión hay que normalizarlo para que se obtengan valores útiles. Se toma como referencia el algoritmo que parece ser mejor (k-NN en este caso) y se compara con el otro (regresión lineal múltiple). Se suma 0.1 porque Wilcoxon no trabaja bien con valores iguales a 0.
+
+```{r}
+difs = (tablatst[,1] - tablatst[,2]) / tablatst[,1]
+wilc_1_2 = cbind(ifelse (difs<0, abs(difs)+0.1, 0+0.1),
+                 ifelse (difs>0, abs(difs)+0.1, 0+0.1))
+colnames(wilc_1_2) = c(colnames(tablatst)[1], colnames(tablatst)[2])
+head(wilc_1_2)
+```
+
+Con esta tabla se puede entrar a evaluar ya el test de Wilcoxon como tal.
+
+```{r}
+LMvsKNNtst = wilcox.test(wilc_1_2[,1], wilc_1_2[,2],
+                         alternative = "two.sided", paired=TRUE)
+Rmas = LMvsKNNtst$statistic
+pvalue = LMvsKNNtst$p.value
+LMvsKNNtst = wilcox.test(wilc_1_2[,2], wilc_1_2[,1],
+                         alternative = "two.sided", paired=TRUE)
+Rmenos = LMvsKNNtst$statistic
+Rmas
+Rmenos
+pvalue
+```
+
+Se puede considerar que no existen diferencias significativas entre ambos algoritmos. El grado de confianza que se tiene de que los algoritmos sean distintos es de apenas un 23.4%, por lo que no se puede validar dicha hipótesis.
+
+### Friedman
+
+Para el test de Friedman se valora la posición (el ranking) de cada algoritmo en cada conjunto de datos, con lo que no es necesario normalizar nada. Como la tabla `tablatst` ya contiene los valores de los algoritmos anteriormente mencionados además del algoritmo M5, se puede utilizar directamente para evaluar el test. Eso sí, la función `friedman.test` recibe una matriz, por lo que sí que es necesario realizar el casting correspondiente de forma previa.
+
+```{r}
+test_friedman = friedman.test(as.matrix(tablatst))
+test_friedman
+```
+
+Dado el p-valor tan bajo que se obtiene como resultado del test de Friedman, se puede afirmar con casi un 99% de confianza que al menos un par de algoritmos son diferenciables entre sí significativamente.
+
+### Holm
+
+Ahora que se tiene certeza de que existe algún par de algoritmos con diferencias significativas, para averiguar cuál o cuáles de estas combinaciones son las que cumplen esta hipótesis se realiza el test de Holm.
+
+```{r}
+tam = dim(tablatst)
+groups = rep(1:tam[2], each=tam[1])
+pairwise.wilcox.test(as.matrix(tablatst),
+                     groups, p.adjust = "holm", paired = TRUE)
+```
+
+En base a los resultados obtenidos, se puede deducir que existen dos pares de algoritmos diferentes significativamente (p-valor rondando el 0.1 o menor). Sabiendo que, según el orden en el que aparecen en la tabla, el 1 representa regresión lineal, el 2 k-NN y el 3 M5, se obtiene que el algoritmo M5 tiene diferencias significativas con respecto tanto a regresión lineal (~92% de confianza) como a k-NN (~90% de confianza). Los otros dos algoritmos, según la tabla, no pueden ser considerados diferentes, como se había comprobado antes en el test de Wilcoxon. Por tanto, se puede afirmar que todas las diferencias significativas entre estos algoritmos son a favor de M5.
