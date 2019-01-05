@@ -271,3 +271,81 @@ RMSE(fitknn7, friedman$Y)
 ```
 
 Los resultados reflejan que no merece la pena eliminar ninguna de las variables, y que el mejor modelo según el criterio seguido en el estudio sería el que contiene todas las variables, ya que añadir la variable X1 cuadrática no aporta una suficiente mejora, y sin embargo sí añade complejidad al modelo.
+
+## Comparativa de algoritmos
+
+En este último apartado se van a comparar los resultados de los dos modelos de regresión múltiple estudiados (regresión lineal múltiple y k-NN) para comprobar si existen diferencias significativas entre ambos, mediante tests de Wilcoxon, Friedman y Holm. Para los tests que soportan más de dos algoritmos como entrada, se añadirán también los resultados del algoritmo M5 como parte de la comparativa.
+
+En este caso se van a comparar únicamente los modelos que contienen todas las variables, cómo punto de partida igualitario para ambos regresores. Llegados a este punto sí tiene sentido contar con un error de train y test, por lo que se van a utilizar las particiones ubicadas dentro de la carpeta del dataset para realizar validación cruzada. La medida de error será el error cuadrático medio o MSE, que viene determinado por la distancia que existe entre las variables de salida predichas y las verdaderas.
+
+En primer lugar se realizará la validación cruzada y el estudio de la regresión lineal múltiple.
+
+```{r}
+path = "./Datos/friedman/friedman"
+
+run_lm_fold = function(i, x, tt = "test") {
+  file = paste(x, "-5-", i, "tra.dat", sep="")
+  x_tra = read.csv(file, comment.char="@")
+  file = paste(x, "-5-", i, "tst.dat", sep="")
+  x_tst = read.csv(file, comment.char="@")
+  In = length(names(x_tra)) - 1
+  names(x_tra)[1:In] = paste ("X", 1:In, sep="")
+  names(x_tra)[In+1] = "Y"
+  names(x_tst)[1:In] = paste ("X", 1:In, sep="")
+  names(x_tst)[In+1] = "Y"
+  
+  if (tt == "train") {
+    test = x_tra
+  }
+  else {
+    test = x_tst
+  }
+  
+  fitMulti = lm(Y~., x_tra)
+  yprime = predict(fitMulti, test)
+  sum(abs(test$Y-yprime)^2)/length(yprime) # MSE
+}
+
+lmMSEtrain = mean(sapply(1:5, run_lm_fold, path, "train"))
+lmMSEtest = mean(sapply(1:5, run_lm_fold, path, "test"))
+
+lmMSEtrain
+lmMSEtest
+```
+
+Como se puede observar en base a los resultados, el modelo de regresión lineal múltiple que contiene a todas las variables obtiene un error cuadrático medio rondando los 7.2, con una ligera mejora en train con respecto a test, como es lógico dado que son los datos en los que se ha basado para construir el modelo.
+
+A continuación se prueba el mismo experimento con el algoritmo k-NN, para ver cómo se comparan sus errores cuadráticos medios con los de regresión lineal.
+
+```{r}
+run_knn_fold = function(i, x, tt = "test") {
+  file = paste(x, "-5-", i, "tra.dat", sep="")
+  x_tra = read.csv(file, comment.char="@")
+  file = paste(x, "-5-", i, "tst.dat", sep="")
+  x_tst = read.csv(file, comment.char="@")
+  In = length(names(x_tra)) - 1
+  names(x_tra)[1:In] = paste ("X", 1:In, sep="")
+  names(x_tra)[In+1] = "Y"
+  names(x_tst)[1:In] = paste ("X", 1:In, sep="")
+  names(x_tst)[In+1] = "Y"
+  
+  if (tt == "train") {
+    test = x_tra
+  }
+  else {
+    test = x_tst
+  }
+  
+  fitMulti = kknn(Y~., x_tra, test)
+  yprime = fitMulti$fitted.values
+  sum(abs(test$Y-yprime)^2)/length(yprime) # MSE
+}
+
+knnMSEtrain = mean(sapply(1:5, run_knn_fold, path, "train"))
+knnMSEtest = mean(sapply(1:5, run_knn_fold, path, "test"))
+
+knnMSEtrain
+knnMSEtest
+```
+
+Para el k-NN la diferencia entre los errores de train y test se hace más notable, aumentando desde un 1.423 hasta un 3.196. A pesar de la diferencia entre ambas pruebas, el MSE en test, que es el que realmente es significativo, sigue estando bastante por debajo con respecto a su análogo de regresión lineal. El modelo que contiene todas las variables se ajusta por tanto bastante mejor con el algoritmo k-NN que con regresión lineal.
