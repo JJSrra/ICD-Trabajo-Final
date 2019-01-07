@@ -16,6 +16,8 @@ El trabajo final de la asignatura _Introducción a la Ciencia de Datos_ se divid
 # Librerías y paquetes a cargar
 
 ```{r}
+library(scales)
+library(dummies)
 library(ggplot2)
 library(dplyr)
 library(tidyr)
@@ -52,6 +54,14 @@ dim(friedman)
 
 Con esto se puede confirmar que existen un total de 1200 ejemplos en el conjunto de datos, cada uno con 6 variables (5 de entrada y 1 de salida).
 
+Antes de nada se debe comprobar si existen valores perdidos en el dataset. Para esto se puede utilizar la función `anyNA`:
+
+```{r}
+anyNA(friedman)
+```
+
+Este resultado indica que no hay valores perdidos y que por lo tanto no es necesario imputar ni tomar ninguna decisión para restablecer dichos valores.
+
 Utilizando la función `summary` se puede obtener una visión más completa del dataset, arrojando nuevos valores interesantes para su estudio como los rangos de las variables, sus cuartiles o su media y mediana.
 
 ```{r}
@@ -73,7 +83,22 @@ sapply(friedman[1:5], var)
 
 En función de la gráfica obtenida, se puede valorar que los datos están más o menos centrados y escalados entre 0 y 1, y que sus varianzas son muy similares. Esto se puede comprobar con los resultados reflejados por la función anteriormente citada.
 
-Se puede comprobar la normalidad de los datos utilizando `qqnorm` y `qqline` para dar una primera visión de cómo se aproximan a una normal. Igualmente, se debe realizar el test de Shapiro-Wilk para contrastar la normalidad o no de los datos.
+A continuación se puede comprobar si existen ejemplos duplicados, y eliminarlos del dataset. Para ello se utiliza la función `duplicated` acompañado de la función `any`:
+
+```{r}
+any(duplicated(friedman))
+```
+
+Como no hay duplicados se puede continuar con el estudio sin realizar ninguna alteración en el conjunto de datos.
+
+Se puede comprobar la distribución de los datos utilizando histogramas. En este caso se utilizan simultáneamente las librerías `ggplot2`y `tidyr`.
+
+```{r}
+friedman %>% gather() %>% ggplot(aes(value)) +
+facet_wrap(~ key, scales = "free") + geom_histogram(bins = 20)
+```
+
+No parece que las variables sigan una distribución normal, pero pese a todo no está de más comprobarlo estadísticamente. Se puede estudiar la normalidad de los datos utilizando `qqnorm` y `qqline` para dar una primera visión de cómo se aproximan a una normal. Igualmente, se debe realizar el test de Shapiro-Wilk para contrastar la normalidad o no de los datos.
 
 ```{r}
 qqnorm(friedman$X1)
@@ -99,22 +124,6 @@ sapply(friedman[1:5], shapiro.test)
 ```
 
 Los p-valores tan bajos que se obtienen de cada una de las variables con el test de Shapiro-Wilk provocan que se rechace la hipótesis de que dichas variables siguen una distribución normal.
-
-Se puede comprobar también si existen valores perdidos en el dataset. Para esto se puede utilizar la función `anyNA`:
-
-```{r}
-anyNA(friedman)
-```
-
-Este resultado indica que no hay valores perdidos y que por lo tanto no es necesario imputar ni tomar ninguna decisión para restablecer dichos valores.
-
-A continuación se puede comprobar si existen ejemplos duplicados, y eliminarlos del dataset. Para ello se utiliza la función `duplicated` acompañado de la función `any`:
-
-```{r}
-any(duplicated(friedman))
-```
-
-Como no hay duplicados se puede continuar con el estudio sin realizar ninguna alteración en el conjunto de datos.
 
 Además, como el rango de las variables está entre 0 y 1 (como se pudo comprobar anteriormente con el `summary` y el box-plot), no es necesario realizar un escalado ni una transformación en los valores. En este punto se puede afirmar que los datos están listos para poder trabajar con ellos.
 
@@ -149,6 +158,114 @@ cor(friedman)
 ```
 
 Como se había supuesto anteriormente en función de las gráficas obtenidas, es la variable X4 la que más correlación tiene con la variable de salida Y (~0.616).
+
+## Análisis para clasificación
+
+El conjunto de datos que se va a utilizar para el estudio de clasificación es **Australian**, también descargado desde el repositorio de datasets correspondiente a la asignatura. Se puede leer el dataset completo mediante la siguiente orden:
+
+```{r}
+australian = read.csv("Datos/australian/australian.dat", header = FALSE, comment.char = "@")
+head(australian)
+```
+
+En este caso se comprueba que existen muchas variables cuyo tipo atómico es entero, pero tan sólo algunas resultan ser variables categóricas. Más adelante se verá cuáles son.
+
+De nuevo los nombres asignados a las variables no aportan ninguna información, y ya que en el resumen en formato KEEL correspondiente al dataset podemos comprobar que sus nombres no aportan ninguna información, se procede a asignarles una notación genérica.
+
+```{r}
+n = length(names(australian))-1
+names(australian)[1:n] = paste ("X", 1:n, sep="")
+names(australian)[n+1] = "Y"
+head(australian)
+```
+
+Para comprobar que se ha leído de forma correcta el dataset, se pueden estudiar sus dimensiones y asegurarse de que hay 690 ejemplos con 14 variables de entrada y una de salida.
+
+```{r}
+dim(australian)
+```
+
+Antes de continuar con el resto del estudio del dataset debe asegurarse que no contiene valores perdidos. En caso de haberlos, se deberá tomar una decisión adecuada para solventar la situación.
+
+```{r}
+anyNA(australian)
+```
+
+Como no existen valores perdidos en el dataset no hay que hacer ningún cálculo para imputarlos, ni es necesario tomar una decisión al respecto. Ahora sí se puede utlizar `summary` para obtener una visión general del dataset, para averiguar sus cuartiles, su media y mediana y el rango de cada variable.
+
+```{r}
+summary(australian)
+```
+
+El resumen del dataset muestra los valores anteriormente citados. Aquí puede observarse qué variables corresponden a datos reales y cuáles a enteros, y entre ellas, se puede apreciar mejor cuáles corresponden a un valor booleano (rango 0-1) y cuáles son variables categóricas con más valores (por ejemplo X12, que toma los valores 1, 2 y 3).
+
+Es interesante saber cuántos valores de clase puede tomar la variable de salida Y, para saber si el dataset está balanceado o no.
+
+```{r}
+table(australian$Y)
+```
+
+Dados estos datos se puede afirmar que está bastante equilibrada, dado que sólo hay dos clases posibles y toman en torno al 50% de los datos cada una.
+
+Un dato que no aparece en el resumen y que se puede calcular es la desviación típica. Para ello se utiliza la función `sd`:
+
+```{r}
+sapply(australian, sd)
+```
+
+Con una gráfica box-plot pueden verse de forma gráfica los cuartiles de las variables, ademaś de sus varianzas y lo centrados o escalados que están los datos. Sin embargo, como los valores para este dataset no están normalizados es de esperar que la gráfica no aporte mucha información. Sin embargo, para calcular directamente las varianzas se puede utilizar la función `var`:
+
+```{r}
+boxplot(australian[1:14])
+sapply(australian[1:14], var)
+```
+
+Utilizando `tidyr` y `ggplot` se pueden ver estos histogramas que aporten una idea general de la distribución de cada una de las variables del dataset. 
+
+```{r}
+australian %>% gather() %>% ggplot(aes(value)) +
+facet_wrap(~ key, scales = "free") + geom_histogram(bins = 20)
+```
+
+Para obtener de forma más precisa una conclusión con respecto a la normalidad de los datos, se debe realizar el test de Shapiro-Wilk sobre las variables a estudiar. En este caso no tiene sentido sobre las variables categóricas, así que se hará sobre las que no lo son.
+
+```{r}
+sapply(australian[c(2,3,5,7,10,13,14)], shapiro.test)
+```
+
+Como el p-valor es muy bajo en todas, se puede afirmar con una confianza muy alta (superior al 99%) que dichas variables no siguen una distribución normal.
+
+Con respecto a las variables dummy, para este dataset sólo se van a aplicar a aquellas variables que deberían ser consideradas factor a pesar de haber sido leídas como entero. Se trata de las variables X4 y X12, que solamente toman valores 1, 2 y 3. Para no darle más peso a las diferencias entre distintos pares de valores, se toman valores dummy.
+
+```{r}
+australian$X4 = as.factor(australian$X4)
+australian$X12 = as.factor(australian$X12)
+
+australian = dummy.data.frame(australian, sep=".")
+head(australian)
+```
+
+Como para aplicar el algoritmo k-NN va a ser necesario normalizar los datos, se proceden a escalar a continuación.
+
+```{r}
+maxs = apply(australian, 2, max)
+mins = apply(australian, 2, min)
+australian = as.data.frame(scale(australian, center = mins, scale = maxs - mins))
+head(australian)
+```
+
+Como existen tantas variables es complicado realizar una gráfica comparativa de cada variable con respecto al resto y que esta aporte información útil, por lo que se muestran directamente los valores de correlación utilizando la función `cor`. Como la matriz es enorme se obtiene un subconjunto de aquellos valores superiores a 0.5 y que no sean el 1.0 correspondiente a la diagonal. 
+
+```{r}
+correlation = as.data.frame(as.table(cor(australian)))
+subset(correlation, abs(Freq) > 0.5 & abs(Freq) < 1.0)
+```
+
+Cabe destacar la alta correlación negativa entre X4.2 y X4.1, obviamente esto se debe a que es una variable categórica que no puede tomar ambos valores a la vez, y el tercer valor apenas está presente. Por tanto es un indicativo de que una de las variables se puede eliminar por "repetir información" y estar muy ligadas. Lo mismo ocurre con X12.2 y X12.1.
+
+```{r}
+australian = australian[,-which(names(australian) %in% c("X4.1", "X12.1"))]
+```
 
 # Trabajo Final Regresión
 
