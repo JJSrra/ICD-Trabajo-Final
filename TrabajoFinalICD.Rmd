@@ -566,16 +566,48 @@ pvalue
 
 Se puede considerar que no existen diferencias significativas entre ambos algoritmos. El grado de confianza que se tiene de que los algoritmos sean distintos es de apenas un 23.4%, por lo que no se puede validar dicha hipótesis.
 
+También se puede evaluar la diferencia existente entre estos algoritmos para los resultados de train, con los valores recopilados anteriormente.
+
+```{r}
+difs = (tablatra[,1] - tablatra[,2]) / tablatra[,1]
+wilc_1_2 = cbind(ifelse (difs<0, abs(difs)+0.1, 0+0.1),
+                 ifelse (difs>0, abs(difs)+0.1, 0+0.1))
+colnames(wilc_1_2) = c(colnames(tablatra)[1], colnames(tablatra)[2])
+head(wilc_1_2)
+
+LMvsKNNtst = wilcox.test(wilc_1_2[,1], wilc_1_2[,2],
+                         alternative = "two.sided", paired=TRUE)
+Rmas = LMvsKNNtst$statistic
+pvalue = LMvsKNNtst$p.value
+KNNvsLMtst = wilcox.test(wilc_1_2[,2], wilc_1_2[,1],
+                         alternative = "two.sided", paired=TRUE)
+Rmenos = KNNvsLMtst$statistic
+Rmas
+Rmenos
+pvalue
+```
+
+Según el test de Wilcoxon, para el conjunto de datos de train sí que hay casi un 100% de confianza de que existan diferencias significativas entre ambos algoritmos.
+
 ### Friedman
 
 Para el test de Friedman se valora la posición (el ranking) de cada algoritmo en cada conjunto de datos, con lo que no es necesario normalizar nada. Como la tabla `tablatst` ya contiene los valores de los algoritmos anteriormente mencionados además del algoritmo M5, se puede utilizar directamente para evaluar el test. Eso sí, la función `friedman.test` recibe una matriz, por lo que sí que es necesario realizar el casting correspondiente de forma previa.
 
 ```{r}
-test_friedman = friedman.test(as.matrix(tablatst))
-test_friedman
+test_friedman_test = friedman.test(as.matrix(tablatst))
+test_friedman_test
 ```
 
 Dado el p-valor tan bajo que se obtiene como resultado del test de Friedman, se puede afirmar con casi un 99% de confianza que al menos un par de algoritmos son diferenciables entre sí significativamente.
+
+A pesar de que en train existía un valor muy alto de confianza de que regresión lineal y k-NN fueran significativamente distintos, se puede probar el test de Friedman para ver si corrobora este hecho.
+
+```{r}
+test_friedman_train = friedman.test(as.matrix(tablatra))
+test_friedman_train
+```
+
+De nuevo el valor es muy pequeño, reforzando la hipótesis obtenida a partir de Wilcoxon de que hay diferencias significativas entre algún par de algoritmos (según Wilcoxon, k-NN y regresión lineal).
 
 ### Holm
 
@@ -589,6 +621,17 @@ pairwise.wilcox.test(as.matrix(tablatst),
 ```
 
 En base a los resultados obtenidos, se puede deducir que existen dos pares de algoritmos diferentes significativamente (p-valor rondando el 0.1 o menor). Sabiendo que, según el orden en el que aparecen en la tabla, el 1 representa regresión lineal, el 2 k-NN y el 3 M5, se obtiene que el algoritmo M5 tiene diferencias significativas con respecto tanto a regresión lineal (~92% de confianza) como a k-NN (~90% de confianza). Los otros dos algoritmos, según la tabla, no pueden ser considerados diferentes, como se había comprobado antes en el test de Wilcoxon. Por tanto, se puede afirmar que todas las diferencias significativas entre estos algoritmos son a favor de M5.
+
+Para el conjunto de train, el test de Holm también revelará qué algoritmos son diferentes entre sí, y con qué confianza.
+
+```{r}
+tam = dim(tablatra)
+groups = rep(1:tam[2], each=tam[1])
+pairwise.wilcox.test(as.matrix(tablatra),
+                     groups, p.adjust = "holm", paired = TRUE)
+```
+
+Los valores tan bajos en todos los pares indican que los tres algoritmos son mutuamente distintos entre sí cuando se trata del conjunto de train. Esto era de esperar dado que se ha visto que M5 es distinto al resto en test y que k-NN y regresión lineal tenían una altísima confianza de serlo.
 
 # Trabajo Final Clasificación
 
