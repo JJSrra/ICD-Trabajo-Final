@@ -22,8 +22,11 @@ library(tidyr)
 library(kknn)
 ```
 
+# Análisis de los datos
 
-# Trabajo Final Regresión
+En este primer apartado se estudiarán la distribución de los datos, su rango de valores, y toda aquella información que se considere necesaria para la correcta aplicación del trabajo correspondiente a cada parte.
+
+## Análisis para regresión
 
 En primer lugar se realizará el estudio de la base de datos de regresión. En este caso el conjunto de datos a analizar es **Friedman**, que se ha descargado desde el repositorio de datasets de la asignatura. Se puede leer utilizando la siguiente orden:
 
@@ -55,6 +58,48 @@ Utilizando la función `summary` se puede obtener una visión más completa del 
 summary(friedman)
 ```
 
+Se puede calcular la desviación típica utilizando la función `sd`:
+
+```{r}
+sapply(friedman, sd)
+```
+
+Mediante una gráfica box-plot se puede comprobar si los datos están escalados o centrados, y valorar cómo se comparan sus varianzas. Utilizando la función `var` se calculan dichas varianzas.
+
+```{r}
+boxplot(friedman[1:5])
+sapply(friedman[1:5], var)
+```
+
+En función de la gráfica obtenida, se puede valorar que los datos están más o menos centrados y escalados entre 0 y 1, y que sus varianzas son muy similares. Esto se puede comprobar con los resultados reflejados por la función anteriormente citada.
+
+Se puede comprobar la normalidad de los datos utilizando `qqnorm` y `qqline` para dar una primera visión de cómo se aproximan a una normal. Igualmente, se debe realizar el test de Shapiro-Wilk para contrastar la normalidad o no de los datos.
+
+```{r}
+qqnorm(friedman$X1)
+qqline(friedman$X1)
+
+qqnorm(friedman$X2)
+qqline(friedman$X2)
+
+qqnorm(friedman$X3)
+qqline(friedman$X3)
+
+qqnorm(friedman$X4)
+qqline(friedman$X4)
+
+qqnorm(friedman$X5)
+qqline(friedman$X5)
+```
+
+En base a las gráficas no se puede concluir de forma clara si las variables se ajustan a una distribución normal por lo que es necesario validar con el test de Shapiro-Wilk.
+
+```{r}
+sapply(friedman[1:5], shapiro.test)
+```
+
+Los p-valores tan bajos que se obtienen de cada una de las variables con el test de Shapiro-Wilk provocan que se rechace la hipótesis de que dichas variables siguen una distribución normal.
+
 Se puede comprobar también si existen valores perdidos en el dataset. Para esto se puede utilizar la función `anyNA`:
 
 ```{r}
@@ -71,9 +116,15 @@ any(duplicated(friedman))
 
 Como no hay duplicados se puede continuar con el estudio sin realizar ninguna alteración en el conjunto de datos.
 
-Además, como el rango de las variables está entre 0 y 1 (como se pudo comprobar anteriormente con el `summary`), no es necesario realizar un escalado ni una transformación en los valores. En este punto se puede afirmar que los datos están listos para poder trabajar con ellos.
+Además, como el rango de las variables está entre 0 y 1 (como se pudo comprobar anteriormente con el `summary` y el box-plot), no es necesario realizar un escalado ni una transformación en los valores. En este punto se puede afirmar que los datos están listos para poder trabajar con ellos.
 
-Como primer paso para el análisis del dataset se puede mostrar cada una de las variables de entrada con respecto a la variable de salida. Esto permitirá averiguar de un vistazo cuál tiene más potencial de determinar qué valor de salida obtendrá dicho ejemplo.
+Para continuar con el análisis del dataset se puede mostrar una gráfica comparativa de cada variable con respecto del resto, así se puede visualizar cuáles tienen una correlación alta.
+
+```{r}
+plot(friedman)
+```
+
+Visualizando la gráfica anterior se aprecia que entre las variables de entrada no existe ninguna correlación clara, de hecho los puntos se distribuyen casi por todo el espacio de la gráfica. Las que sí tienen más interés son aquellas que comparan las distintas variables de entrada con la variable de salida Y. Ver directamente estas gráficas permitirá averiguar de un vistazo cuál tiene más potencial de determinar qué valor de salida obtendrá dicho ejemplo.
 
 ```{r}
 plotY = function (x,y) {
@@ -98,6 +149,8 @@ cor(friedman)
 ```
 
 Como se había supuesto anteriormente en función de las gráficas obtenidas, es la variable X4 la que más correlación tiene con la variable de salida Y (~0.616).
+
+# Trabajo Final Regresión
 
 ## Modelos de regresión lineal simple
 
