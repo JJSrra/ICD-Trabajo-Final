@@ -825,3 +825,26 @@ pvalue
 
 Como en los casos anteriores, el p-valor es muy elevado por lo que la confianza de que se trate de dos algoritmos con diferencias significativas entre sí es muy baja. Ninguno de los tres algoritmos ha resultado ser diferente con respecto a otro según este test.
 
+### Friedman
+
+Lo siguiente a probar en el estudio comparativo es el test de Friedman. Dicho test reflejará si existe al menos una pareja de algoritmos con diferencias significativas entre sí. A pesar de lo que ha dicho el test de Wilcoxon, hay que probarlo como objetivo de la práctica.
+
+```{r}
+test_friedman = friedman.test(as.matrix(tablatst))
+test_friedman
+```
+
+Reafirmando lo que ocurría en el test de Wilcoxon, el p-valor tan alto que devuelve el test de Friedman indica que solamente habría un par de algoritmos significativamente distintos con apenas un 5% de confianza, por lo que prácticamente se descarta esta idea.
+
+### Holm
+
+Por último, hay que evaluar la tabla anterior con el test de Holm. Este test dará una información más detallada para confirmar si existen o no parejas de algoritmos con diferencias significativas. A juzgar por los dos tests anteriores, todo apunta a que no las habrá.
+
+```{r}
+tam = dim(tablatst)
+groups = rep(1:tam[2], each=tam[1])
+pairwise.wilcox.test(as.matrix(tablatst),
+                     groups, p.adjust = "holm", paired = TRUE)
+```
+
+Como los p-value dan valores tan altos, la confianza de que haya diferencias significativas en cada caso es 0%, se puede negar con rotundidad este caso según el test de Holm.
