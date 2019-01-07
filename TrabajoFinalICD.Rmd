@@ -556,9 +556,9 @@ LMvsKNNtst = wilcox.test(wilc_1_2[,1], wilc_1_2[,2],
                          alternative = "two.sided", paired=TRUE)
 Rmas = LMvsKNNtst$statistic
 pvalue = LMvsKNNtst$p.value
-LMvsKNNtst = wilcox.test(wilc_1_2[,2], wilc_1_2[,1],
+KNNvsLMtst = wilcox.test(wilc_1_2[,2], wilc_1_2[,1],
                          alternative = "two.sided", paired=TRUE)
-Rmenos = LMvsKNNtst$statistic
+Rmenos = KNNvsLMtst$statistic
 Rmas
 Rmenos
 pvalue
@@ -739,3 +739,89 @@ qdaPred
 ```
 
 El resultado de QDA es 81.16%, que pese a lo analizado anteriormente es el peor de los 3 resultados obtenidos. El mejor del estudio, por tanto, parece ser el modelo de 11-NN que se ha estudiado en primer lugar.
+
+## Comparativa de algoritmos
+
+Una vez concluidos los apartados de cada algoritmo se han obtenido los resultados del estudio, el valor de acierto (en %) de cada algoritmo para el dataset _Australian_. Ahora se pueden estudiar las diferencias entre algoritmos mediante los tests de Wilcoxon, Friedman y Holm.
+
+### Wilcoxon
+
+En primer lugar hay que leer las tablas de clasificación, para poder realizar los cálculos adecuados para este caso. Estas tablas tienen los valores recogidos por los algoritmos de este estudio.
+
+```{r}
+resultados = read.csv("Datos/clasif_train_alumnos.csv")
+tablatra = cbind(resultados[,2:dim(resultados)[2]])
+colnames(tablatra) = names(resultados)[2:dim(resultados)[2]]
+rownames(tablatra) = resultados[,1]
+
+resultados = read.csv("Datos/clasif_test_alumnos.csv")
+tablatst = cbind(resultados[,2:dim(resultados)[2]])
+colnames(tablatst) = names(resultados)[2:dim(resultados)[2]]
+rownames(tablatst) = resultados[,1]
+```
+
+Una vez leídos los datos, se puede realizar el test de Wilcoxon para cada dos pares de algoritmos. Los primeros en ser probados son k-NN y LDA.
+
+```{r}
+difs = (tablatst[,1] - tablatst[,2]) / tablatst[,1]
+wilc_1_2 = cbind(ifelse (difs<0, abs(difs)+0.1, 0+0.1),
+                 ifelse (difs>0, abs(difs)+0.1, 0+0.1))
+colnames(wilc_1_2) = c(colnames(tablatst)[1], colnames(tablatst)[2])
+head(wilc_1_2)
+
+KNNvsLDAtst = wilcox.test(wilc_1_2[,1], wilc_1_2[,2],
+                         alternative = "two.sided", paired=TRUE)
+Rmas = KNNvsLDAtst$statistic
+pvalue = KNNvsLDAtst$p.value
+LDAvsKNNtst = wilcox.test(wilc_1_2[,2], wilc_1_2[,1],
+                         alternative = "two.sided", paired=TRUE)
+Rmenos = LDAvsKNNtst$statistic
+Rmas
+Rmenos
+pvalue
+```
+
+El valor tan elevado que se obtiene del test de Wilcoxon no permite afirmar con apenas confianza que se trate de dos algoritmos significativamente diferentes. Ahora se realiza el test con los algoritmos k-NN y QDA.
+
+```{r}
+difs = (tablatst[,1] - tablatst[,3]) / tablatst[,1]
+wilc_1_2 = cbind(ifelse (difs<0, abs(difs)+0.1, 0+0.1),
+                 ifelse (difs>0, abs(difs)+0.1, 0+0.1))
+colnames(wilc_1_2) = c(colnames(tablatst)[1], colnames(tablatst)[3])
+head(wilc_1_2)
+
+KNNvsQDAtst = wilcox.test(wilc_1_2[,1], wilc_1_2[,2],
+                         alternative = "two.sided", paired=TRUE)
+Rmas = KNNvsQDAtst$statistic
+pvalue = KNNvsQDAtst$p.value
+QDAvsKNNtst = wilcox.test(wilc_1_2[,2], wilc_1_2[,1],
+                         alternative = "two.sided", paired=TRUE)
+Rmenos = QDAvsKNNtst$statistic
+Rmas
+Rmenos
+pvalue
+```
+
+Este valor es menor que el anterior pero la confianza de que los algoritmos sean significativamente diferentes sigue siendo baja, de un 60%, con lo que tampoco se puede afirmar en este caso. Por último, se realiza el test con LDA y QDA.
+
+```{r}
+difs = (tablatst[,2] - tablatst[,3]) / tablatst[,2]
+wilc_1_2 = cbind(ifelse (difs<0, abs(difs)+0.1, 0+0.1),
+                 ifelse (difs>0, abs(difs)+0.1, 0+0.1))
+colnames(wilc_1_2) = c(colnames(tablatst)[2], colnames(tablatst)[3])
+head(wilc_1_2)
+
+LDAvsQDAtst = wilcox.test(wilc_1_2[,1], wilc_1_2[,2],
+                         alternative = "two.sided", paired=TRUE)
+Rmas = LDAvsQDAtst$statistic
+pvalue = LDAvsQDAtst$p.value
+QDAvsLDAtst = wilcox.test(wilc_1_2[,2], wilc_1_2[,1],
+                         alternative = "two.sided", paired=TRUE)
+Rmenos = QDAvsLDAtst$statistic
+Rmas
+Rmenos
+pvalue
+```
+
+Como en los casos anteriores, el p-valor es muy elevado por lo que la confianza de que se trate de dos algoritmos con diferencias significativas entre sí es muy baja. Ninguno de los tres algoritmos ha resultado ser diferente con respecto a otro según este test.
+
