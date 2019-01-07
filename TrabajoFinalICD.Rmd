@@ -23,6 +23,7 @@ library(dplyr)
 library(tidyr)
 library(caret)
 library(kknn)
+library(MASS)
 ```
 
 # Análisis de los datos
@@ -659,7 +660,7 @@ postResample(knnPred.2, aust_test_labels)
 postResample(knnPred.3, aust_test_labels)
 ```
 
-Como se puede observar, el mejor modelo, k=11, no sobreaprende, y obtiene un acierto similar al segundo. Además el descenso de acierto en test no es muy grande por lo que se trata de un modelo que se puede considerar aceptable.
+Como se puede observar, el mejor modelo, k=11, no sobreaprende, y obtiene un acierto similar al segundo, de un 84.78%. Además el descenso de acierto en test no es muy grande por lo que se trata de un modelo que se puede considerar aceptable.
 
 Se pueden comparar los resultados de los modelos de un vistazo mostrándolos junto a las etiquetas reales, para valorar gráficamente su acierto.
 
@@ -671,3 +672,39 @@ plot(aust_test$X13~aust_test$X2,col=knnPred.3, main="Modelo 9-NN")
 plot(aust_test$X13~aust_test$X2,col=aust_test_labels, main="Originales Test")
 par(mfrow=c(1,1))
 ```
+
+## Algoritmo LDA
+
+El siguiente objetivo de la práctica es aplicar el algoritmo LDA al conjunto de datos de clasificación. LDA es un algoritmo que funciona mejor si los datos son normales y las varianzas similares. Se ha comprobado anteriormente en el apartado de análisis de datos de clasificación que, sin embargo, las variables correspondientes a este problema no siguen una distribución normal.
+
+Antes se calcularon las varianzas de las variables sin normalizar. Las normalizadas son las siguientes:
+
+```{r}
+sapply(australian[1:dim(australian)[2]-1], var)
+```
+
+Se puede apreciar que las varianzas no son demasiado similares, por lo que las condiciones para aplicar el algoritmo LDA no son idóneas. Igualmente, como es el objetivo de la práctica, se procede a aplicarlo.
+
+```{r}
+Y = aust_train_labels
+lda.fit = lda(Y~., data=cbind(aust_train,Y))
+lda.fit
+```
+
+Se pueden visualizar los datos del modelo para ambas clases.
+
+```{r}
+plot(lda.fit, type="both")
+```
+
+Ahora se puede realizar la predicción del test con el modelo que se ha obtenido.
+
+```{r}
+lda.pred = predict(lda.fit, aust_test)
+
+table(lda.pred$class,aust_test_labels)
+ldaPred = mean(lda.pred$class==aust_test_labels)
+ldaPred
+```
+
+Este matriz de confusión muestra los ejemplos que el modelo ha clasificado bien y mal respectivamente para cada clase. Como hay más ejemplos de la clase 1, es normal que se haya equivocado en más que en lo que respecta a la clase 0. El modelo obtiene en test un acierto del 84.06%, algo menor que el que presentaba k-NN pero sin embargo nada desdeñable, sobre todo considerando el hecho de que las condiciones no son óptimas para este algoritmo.
