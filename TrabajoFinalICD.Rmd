@@ -673,6 +673,18 @@ plot(aust_test$X13~aust_test$X2,col=aust_test_labels, main="Originales Test")
 par(mfrow=c(1,1))
 ```
 
+También se puede comprobar cómo se ajustan estos modelos a los datos de train para un estudio posterior.
+
+```{r}
+knnPredTra.1 = predict(knnModel.1, aust_train)
+knnPredTra.2 = predict(knnModel.2, aust_train)
+knnPredTra.3 = predict(knnModel.3, aust_train)
+
+postResample(knnPredTra.1, aust_train_labels)
+postResample(knnPredTra.2, aust_train_labels)
+postResample(knnPredTra.3, aust_train_labels)
+```
+
 ## Algoritmo LDA
 
 El siguiente objetivo de la práctica es aplicar el algoritmo LDA al conjunto de datos de clasificación. LDA es un algoritmo que funciona mejor si los datos son normales y las varianzas similares. Se ha comprobado anteriormente en el apartado de análisis de datos de clasificación que, sin embargo, las variables correspondientes a este problema no siguen una distribución normal.
@@ -709,6 +721,16 @@ ldaPred
 
 Esta matriz de confusión muestra los ejemplos que el modelo ha clasificado bien y mal respectivamente para cada clase. Como en el subconjunto de test hay más ejemplos de la clase 1, es normal que se haya equivocado en más que en lo que respecta a la clase 0. El modelo obtiene en test un acierto del 84.06%, algo menor que el que presentaba k-NN pero sin embargo nada desdeñable, sobre todo considerando el hecho de que las condiciones no son óptimas para este algoritmo.
 
+Se puede estudiar el acierto con el propio conjunto de train para un apartado posterior.
+
+```{r}
+lda.predTra = predict(lda.fit, aust_train)
+
+table(lda.predTra$class,aust_train_labels)
+ldaPredTra = mean(lda.predTra$class==aust_train_labels)
+ldaPredTra
+```
+
 ## Algoritmo QDA
 
 El tercer algoritmo que es necesario evaluar para la práctica es QDA. Este algoritmo funciona mejor si las varianzas entre las variables de unas clases con respecto a las otras son altas. Para comprobarlo se realizan dos subconjuntos del dataset.
@@ -740,6 +762,16 @@ qdaPred
 
 El resultado de QDA es 81.16%, que pese a lo analizado anteriormente es el peor de los 3 resultados obtenidos. El mejor del estudio, por tanto, parece ser el modelo de 11-NN que se ha estudiado en primer lugar.
 
+Para terminar QDA se puede valorar el acierto en el propio conjunto de train.
+
+```{r}
+qda.predTra = predict(qda.fit, aust_train)
+
+table(qda.predTra$class,aust_train_labels)
+qdaPredTra = mean(qda.predTra$class==aust_train_labels)
+qdaPredTra
+```
+
 ## Comparativa de algoritmos
 
 Una vez concluidos los apartados de cada algoritmo se han obtenido los resultados del estudio, el valor de acierto (en %) de cada algoritmo para el dataset _Australian_. Ahora se pueden estudiar las diferencias entre algoritmos mediante los tests de Wilcoxon, Friedman y Holm.
@@ -760,7 +792,30 @@ colnames(tablatst) = names(resultados)[2:dim(resultados)[2]]
 rownames(tablatst) = resultados[,1]
 ```
 
-Una vez leídos los datos, se puede realizar el test de Wilcoxon para cada dos pares de algoritmos. Los primeros en ser probados son k-NN y LDA.
+Una vez leídos los datos, se puede realizar el test de Wilcoxon para cada dos pares de algoritmos. Los primeros en ser probados son k-NN y LDA para train.
+
+```{r}
+difs = (tablatra[,1] - tablatra[,2]) / tablatra[,1]
+wilc_1_2 = cbind(ifelse (difs<0, abs(difs)+0.1, 0+0.1),
+                 ifelse (difs>0, abs(difs)+0.1, 0+0.1))
+colnames(wilc_1_2) = c(colnames(tablatra)[1], colnames(tablatra)[2])
+head(wilc_1_2)
+
+KNNvsLDAtst = wilcox.test(wilc_1_2[,1], wilc_1_2[,2],
+                         alternative = "two.sided", paired=TRUE)
+Rmas = KNNvsLDAtst$statistic
+pvalue = KNNvsLDAtst$p.value
+LDAvsKNNtst = wilcox.test(wilc_1_2[,2], wilc_1_2[,1],
+                         alternative = "two.sided", paired=TRUE)
+Rmenos = LDAvsKNNtst$statistic
+Rmas
+Rmenos
+pvalue
+```
+
+Para train el p-valor es muy alto, con lo que la confianza resulta ser muy pequeña y no se puede asumir que sean significativamente distintos.
+
+A continuación, los mismos algoritmos son probados para test.
 
 ```{r}
 difs = (tablatst[,1] - tablatst[,2]) / tablatst[,1]
@@ -781,7 +836,30 @@ Rmenos
 pvalue
 ```
 
-El valor tan elevado que se obtiene del test de Wilcoxon no permite afirmar con apenas confianza que se trate de dos algoritmos significativamente diferentes. Ahora se realiza el test con los algoritmos k-NN y QDA.
+El valor tan elevado que se obtiene del test de Wilcoxon no permite afirmar con apenas confianza que se trate de dos algoritmos significativamente diferentes. Ahora se realiza el test con los algoritmos k-NN y QDA, primero para train.
+
+```{r}
+difs = (tablatra[,1] - tablatra[,3]) / tablatra[,1]
+wilc_1_2 = cbind(ifelse (difs<0, abs(difs)+0.1, 0+0.1),
+                 ifelse (difs>0, abs(difs)+0.1, 0+0.1))
+colnames(wilc_1_2) = c(colnames(tablatra)[1], colnames(tablatra)[3])
+head(wilc_1_2)
+
+KNNvsQDAtst = wilcox.test(wilc_1_2[,1], wilc_1_2[,2],
+                         alternative = "two.sided", paired=TRUE)
+Rmas = KNNvsQDAtst$statistic
+pvalue = KNNvsQDAtst$p.value
+QDAvsKNNtst = wilcox.test(wilc_1_2[,2], wilc_1_2[,1],
+                         alternative = "two.sided", paired=TRUE)
+Rmenos = QDAvsKNNtst$statistic
+Rmas
+Rmenos
+pvalue
+```
+
+Para este par de algoritmos el p-valor se reduce pero sigue sin alcanzar valores interesantes de confianza. No se puede afirmar que ambos algoritmos tengan diferencias significativas.
+
+Ahora se prueban de nuevo k-NN y QDA, esta vez para test.
 
 ```{r}
 difs = (tablatst[,1] - tablatst[,3]) / tablatst[,1]
@@ -802,7 +880,28 @@ Rmenos
 pvalue
 ```
 
-Este valor es menor que el anterior pero la confianza de que los algoritmos sean significativamente diferentes sigue siendo baja, de un 60%, con lo que tampoco se puede afirmar en este caso. Por último, se realiza el test con LDA y QDA.
+Este valor es menor que el que tenían k-NN y LDA en test, pero la confianza de que los algoritmos sean significativamente diferentes sigue siendo baja, de un 60%, con lo que tampoco se puede afirmar en este caso. Por último, se realiza el test con LDA y QDA, primero para train.
+
+```{r}
+difs = (tablatra[,2] - tablatra[,3]) / tablatra[,2]
+wilc_1_2 = cbind(ifelse (difs<0, abs(difs)+0.1, 0+0.1),
+                 ifelse (difs>0, abs(difs)+0.1, 0+0.1))
+colnames(wilc_1_2) = c(colnames(tablatra)[2], colnames(tablatra)[3])
+head(wilc_1_2)
+
+LDAvsQDAtst = wilcox.test(wilc_1_2[,1], wilc_1_2[,2],
+                         alternative = "two.sided", paired=TRUE)
+Rmas = LDAvsQDAtst$statistic
+pvalue = LDAvsQDAtst$p.value
+QDAvsLDAtst = wilcox.test(wilc_1_2[,2], wilc_1_2[,1],
+                         alternative = "two.sided", paired=TRUE)
+Rmenos = QDAvsLDAtst$statistic
+Rmas
+Rmenos
+pvalue
+```
+
+Este valor es el más bajo que se ha encontrado hasta ahora, con un 85% de confianza podría estudiarse el caso de que ambos algoritmos fueran significativamente distintos en el conjunto de train. A pesar de todo, sigue siendo un p-valor demasiado alto. Por último, toca probar con test.
 
 ```{r}
 difs = (tablatst[,2] - tablatst[,3]) / tablatst[,2]
@@ -823,15 +922,24 @@ Rmenos
 pvalue
 ```
 
-Como en los casos anteriores, el p-valor es muy elevado por lo que la confianza de que se trate de dos algoritmos con diferencias significativas entre sí es muy baja. Ninguno de los tres algoritmos ha resultado ser diferente con respecto a otro según este test.
+Como en algunos casos anteriores, el p-valor es muy elevado por lo que la confianza de que se trate de dos algoritmos con diferencias significativas entre sí es muy baja. Ninguno de los tres algoritmos ha resultado ser diferente con respecto a otro según este Wilcoxon.
 
 ### Friedman
 
 Lo siguiente a probar en el estudio comparativo es el test de Friedman. Dicho test reflejará si existe al menos una pareja de algoritmos con diferencias significativas entre sí. A pesar de lo que ha dicho el test de Wilcoxon, hay que probarlo como objetivo de la práctica.
 
+En primer lugar se estudiará el conjunto de train.
+
 ```{r}
-test_friedman = friedman.test(as.matrix(tablatst))
-test_friedman
+test_friedman_train = friedman.test(as.matrix(tablatra))
+test_friedman_train
+```
+
+El p-valor obtenido es bastante alto, dejando una confianza de que existan diferencias significativas en al menos un par de algoritmos en tan sólo un 48%, tal y como se veía en el test de Wilcoxon. A continuación se realiza la misma prueba en test.
+
+```{r}
+test_friedman_test = friedman.test(as.matrix(tablatst))
+test_friedman_test
 ```
 
 Reafirmando lo que ocurría en el test de Wilcoxon, el p-valor tan alto que devuelve el test de Friedman indica que solamente habría un par de algoritmos significativamente distintos con apenas un 5% de confianza, por lo que prácticamente se descarta esta idea.
@@ -839,6 +947,17 @@ Reafirmando lo que ocurría en el test de Wilcoxon, el p-valor tan alto que devu
 ### Holm
 
 Por último, hay que evaluar la tabla anterior con el test de Holm. Este test dará una información más detallada para confirmar si existen o no parejas de algoritmos con diferencias significativas. A juzgar por los dos tests anteriores, todo apunta a que no las habrá.
+
+Primero se comprueba el conjunto de train.
+
+```{r}
+tam = dim(tablatra)
+groups = rep(1:tam[2], each=tam[1])
+pairwise.wilcox.test(as.matrix(tablatra),
+                     groups, p.adjust = "holm", paired = TRUE)
+```
+
+Los p-valores son demasiado elevados para considerar que pueda haber diferencias significativas, la confianza no aumenta por encima del 47% para ningún par de algoritmos. Por ello, se puede descartar que haya un par de algoritmos distintos. Veamos qué ocurre en test.
 
 ```{r}
 tam = dim(tablatst)
