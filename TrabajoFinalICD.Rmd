@@ -683,7 +683,7 @@ Antes se calcularon las varianzas de las variables sin normalizar. Las normaliza
 sapply(australian[1:dim(australian)[2]-1], var)
 ```
 
-Se puede apreciar que las varianzas no son demasiado similares, por lo que las condiciones para aplicar el algoritmo LDA no son idóneas. Igualmente, como es el objetivo de la práctica, se procede a aplicarlo.
+Se puede apreciar que las varianzas no son demasiado similares, por lo que las condiciones para aplicar el algoritmo LDA no son idóneas. Igualmente, como es el objetivo de la práctica, se procede a aplicarlo. Hay que utilizar la función `lda` del paquete `MASS`.
 
 ```{r}
 Y = aust_train_labels
@@ -707,4 +707,35 @@ ldaPred = mean(lda.pred$class==aust_test_labels)
 ldaPred
 ```
 
-Este matriz de confusión muestra los ejemplos que el modelo ha clasificado bien y mal respectivamente para cada clase. Como hay más ejemplos de la clase 1, es normal que se haya equivocado en más que en lo que respecta a la clase 0. El modelo obtiene en test un acierto del 84.06%, algo menor que el que presentaba k-NN pero sin embargo nada desdeñable, sobre todo considerando el hecho de que las condiciones no son óptimas para este algoritmo.
+Esta matriz de confusión muestra los ejemplos que el modelo ha clasificado bien y mal respectivamente para cada clase. Como en el subconjunto de test hay más ejemplos de la clase 1, es normal que se haya equivocado en más que en lo que respecta a la clase 0. El modelo obtiene en test un acierto del 84.06%, algo menor que el que presentaba k-NN pero sin embargo nada desdeñable, sobre todo considerando el hecho de que las condiciones no son óptimas para este algoritmo.
+
+## Algoritmo QDA
+
+El tercer algoritmo que es necesario evaluar para la práctica es QDA. Este algoritmo funciona mejor si las varianzas entre las variables de unas clases con respecto a las otras son altas. Para comprobarlo se realizan dos subconjuntos del dataset.
+
+```{r}
+aust_0 = australian[australian$Y == 0,][1:dim(australian)[2]-1]
+aust_1 = australian[australian$Y == 1,][1:dim(australian)[2]-1]
+
+sapply(aust_0, var)
+sapply(aust_1, var)
+```
+
+Las varianzas de la mayoría de las variables son sustancialmente distintas, ya que aunque se trata de valores cercanos a 0, son de órdenes muy distintos entre sí. Por ese motivo se puede esperar que QDA se comporte de forma positiva.
+
+Se ejecuta el algoritmo QDA utilizando la función `qda` del paquete `MASS`.
+
+```{r}
+qda.fit = qda(Y~.-X4.3, data=cbind(aust_train,Y))
+qda.fit
+```
+
+```{r}
+qda.pred = predict(qda.fit, aust_test)
+
+table(qda.pred$class, aust_test_labels)
+qdaPred = mean(qda.pred$class==aust_test_labels)
+qdaPred
+```
+
+El resultado de QDA es 81.16%, que pese a lo analizado anteriormente es el peor de los 3 resultados obtenidos. El mejor del estudio, por tanto, parece ser el modelo de 11-NN que se ha estudiado en primer lugar.
